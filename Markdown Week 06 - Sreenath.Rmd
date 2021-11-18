@@ -1,0 +1,127 @@
+---
+title: "ANA 515 Week 06 - Assignment 3"
+author: Sreenath Umagandhi
+date: 11-17-2021
+output: 
+  html_document:
+    theme:
+      bootswatch: slate
+---
+
+```{r setup, include = FALSE}
+
+library(ggplot2)
+library(tidyverse)
+library(lubridate)
+library(anytime)
+library(dplyr)
+```
+
+
+```{r, include = TRUE}
+
+# QUESTION 1
+
+# Unzip the .gz file using gzfile function and load it as .csv into storm_1994
+url <- "/Users/sreenath-umagandhi/Documents/McDaniel ANA 515/Week 06/StormEvents_details-ftp_v1.0_d1994_c20210803.csv.gz"
+file_1994 <- gzfile(url, 'rt') 
+storm_1994 <- read.csv(file_1994)
+```
+
+```{r,include = TRUE}
+
+# QUESTION 2
+
+#Limit the data frame
+storm_1994_subset <- subset(storm_1994, select = c(BEGIN_DATE_TIME, END_DATE_TIME, EPISODE_ID,EVENT_ID,STATE, STATE_FIPS, CZ_NAME,CZ_TYPE,CZ_FIPS,EVENT_TYPE,SOURCE,BEGIN_LAT,END_LAT,BEGIN_LON,END_LON))
+
+```
+
+```{r,include = TRUE}
+
+# QUESTION 3
+
+#Convert to DateTime using lubridate
+storm_1994_subset[['BEGIN_DATE_TIME']] <- dmy_hms(storm_1994_subset[['BEGIN_DATE_TIME']])
+storm_1994_subset[['END_DATE_TIME']] <- dmy_hms(storm_1994_subset[['END_DATE_TIME']])
+
+```
+
+```{r,include = TRUE}
+
+# QUESTION 4
+
+#Convert to Title Case
+storm_1994_subset$STATE = str_to_title(storm_1994_subset$STATE, locale = "en")
+storm_1994_subset$CZ_NAME = str_to_title(storm_1994_subset$CZ_NAME, locale = "en")
+
+```
+
+```{r,include = TRUE}
+
+# QUESTION 5
+
+#Limit to CZ_TYPE "C"
+storm_1994_limit <- storm_1994_subset %>% 
+  filter(CZ_TYPE == "C")
+
+#Remove CZ_TYPE Column
+storm_1994_rcz <- subset(storm_1994_limit, select = -c(CZ_TYPE))
+
+```
+
+```{r,include = TRUE}
+
+# QUESTION 6
+
+#Pad 0 before STATE_FIPS and CZ_FIPS
+storm_1994_rcz$STATE_FIPS <- paste0("0", storm_1994_rcz$STATE_FIPS)
+storm_1994_rcz$CZ_FIPS <- paste0("0", storm_1994_rcz$CZ_FIPS)
+
+#concat STATE_FIPS and CZ_FIPS
+storm_1994_rcz$CONCAT_FIPS <- paste(storm_1994_rcz$STATE_FIPS, storm_1994_rcz$CZ_FIPS)
+
+```
+
+```{r,include = TRUE}
+
+# QUESTION 7
+
+#Rename all column names to lower
+storm_1994_lower <- storm_1994_rcz %>% rename_all(tolower)
+```
+
+```{r,include = TRUE}
+
+# QUESTION 8
+
+#data set with base R
+df_states <- data.frame("Name" = state.name, "Area" = state.area, "Region" = state.region)
+colnames(df_states)
+```
+
+```{r,include = TRUE}
+
+# QUESTION 9
+
+#frequency of states
+storm_1994_freq <- data.frame(table(storm_1994_lower$state))
+storm_1994_freq <- rename(storm_1994_freq,c("name"="Var1"))
+```
+
+```{r,include = TRUE}
+
+# QUESTION 10
+
+#convert to lower and merge 
+df_states_lower <- df_states %>% rename_all(tolower)
+states_merged <- merge(x=storm_1994_freq,y=df_states_lower,by.x="name",by.y="name")
+head(states_merged)
+
+#plot the graph
+ggplot(states_merged, aes(x=area, y=Freq)) +
+  geom_point(aes(color = region)) +
+  labs(x="Land Area (square miles",
+       y="# of storm events in 2017")
+```
+
